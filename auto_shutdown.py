@@ -2,6 +2,7 @@ import subprocess
 from time import localtime, strftime, sleep,time,strptime,mktime
 import googleapiclient.discovery
 from google.oauth2 import service_account
+import sys
 
 
 def check_connection():
@@ -20,10 +21,10 @@ def check_connection():
         connected = False
     return connected
 
-def perform_shutdown():
+def perform_shutdown(creds):
     project='winvms'
     zone='us-central1-a'
-    credentials = service_account.Credentials.from_service_account_file('winvms.json')
+    credentials = service_account.Credentials.from_service_account_file(creds)
     instance='instance-1'
     compute = googleapiclient.discovery.build('compute', 'v1',credentials=credentials)
 
@@ -35,7 +36,7 @@ def perform_shutdown():
     result = compute.instances().stop(project=project,zone=zone,instance=instance).execute()
     sleep(120)
 
-
+creds = sys.argv[1]
 connected = True
 threshold = 5*60
 while True:
@@ -54,7 +55,7 @@ while True:
     elif connected == False:
         current_time = time()
         if current_time - disconnect_time > threshold:
-            perform_shutdown()
+            perform_shutdown(creds)
         else:
             print('shutting down in %d seconds'%(threshold-(current_time- disconnect_time)))
 
