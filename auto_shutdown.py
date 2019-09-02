@@ -1,0 +1,56 @@
+import subprocess
+from time import localtime, strftime, sleep,time,strptime,mktime
+import googleapiclient.discovery
+from google.oauth2 import service_account
+
+
+def check_connection():
+    current_timestamp = strftime("%a, %d %b %Y %H:%M:%S +0000", localtime())
+    print(current_timestamp)
+    cmd = 'netstat -a'
+    ns_output = subprocess.run(cmd,shell=True,capture_output=True,text=True)
+    result = ns_output.stdout
+    result_lines = result.split('\n')
+    for line in result_lines:
+        if '3389' in line and 'ESTABLISHED' in line:
+            connected = True
+            print('%s'%(line))
+            break
+    else:
+        connected = False
+    return connected
+
+def perform_shutdown():
+    project='winvms'
+    zone='us-central1-a'
+    credentials = service_account.Credentials.from_service_account_file('winvms.json')
+    instance='instance-1'
+    compute = googleapiclient.discovery.build('compute', 'v1',credentials=credentials)
+
+    # get info about nodes in project, as a way to test that credentials are working
+    result = compute.instances().list(project=project, zone=zone).execute()
+    print(result)
+
+    # send shutdown command to gce
+    result = compute.instances().stop(project=project,zone=zone,instance=instance).execute()
+    sleep(120)
+
+
+connected = True
+threshold = 5*60
+while True:
+    last_connected = connected
+    connected = check_connection()
+    if last_connected == True and connected == False:
+        # detect transition
+        disconnect_time = time()
+    elif connected == True:
+        disconnect_time = mktime(strptime('2030','%Y')) #set disconnect time way into the future
+    elif connected == False:
+        current_time = time()
+        if current_time - disconnect_time > threshold:
+            perform_shutdown()
+        else:
+            print('shutting down in %d seconds'%(threshold-(current_time- disconnect_time)))
+
+    sleep(10)
