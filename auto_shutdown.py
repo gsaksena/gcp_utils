@@ -22,7 +22,7 @@ def check_connection():
     return connected
 
 def perform_hibernate():
-    cmd = 'shutdown -h'
+    cmd = 'shutdown /h'
     result = subprocess.run(cmd,shell=True)
 
 def perform_shutdown(creds):
