@@ -21,6 +21,10 @@ def check_connection():
         connected = False
     return connected
 
+def perform_hibernate():
+    cmd = 'shutdown -h'
+    result = subprocess.run(cmd,shell=True)
+
 def perform_shutdown(creds):
     project='winvms'
     zone='us-central1-a'
@@ -39,13 +43,14 @@ def perform_shutdown(creds):
 creds = sys.argv[1]
 connected = True
 threshold = 5*60
+current_time = time()
 while True:
     last_connected = connected
     connected = check_connection()
     last_time = current_time
     current_time = time()
     if current_time > last_time + 60:
-        # system likely suspended/hibernated
+        # system likely suspended/hibernated; reset any disconnect time
         disconnect_time = max(disconnect_time, current_time)
     if last_connected == True and connected == False:
         # detect transition
@@ -55,7 +60,8 @@ while True:
     elif connected == False:
         current_time = time()
         if current_time - disconnect_time > threshold:
-            perform_shutdown(creds)
+            #perform_shutdown(creds)
+            perform_hibernate()
         else:
             print('shutting down in %d seconds'%(threshold-(current_time- disconnect_time)))
 
