@@ -41,9 +41,14 @@ threshold = 5*60
 while True:
     last_connected = connected
     connected = check_connection()
+    last_time = current_time
+    current_time = time()
+    if current_time > last_time + 60:
+        # system likely suspended/hibernated
+        disconnect_time = max(disconnect_time, current_time)
     if last_connected == True and connected == False:
         # detect transition
-        disconnect_time = time()
+        disconnect_time = current_time
     elif connected == True:
         disconnect_time = mktime(strptime('2030','%Y')) #set disconnect time way into the future
     elif connected == False:
