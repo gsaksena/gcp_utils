@@ -42,7 +42,8 @@ def perform_shutdown(creds):
 
 creds = sys.argv[1]
 connected = True
-threshold = 5*60
+threshold = 5*60 # num seconds the RDP session can be gone before we take action
+shutdown_fallback_time = 5*60 # num seconds to wait for hibernate to work
 current_time = time()
 while True:
     last_connected = connected
@@ -59,8 +60,9 @@ while True:
         disconnect_time = mktime(strptime('2030','%Y')) #set disconnect time way into the future
     elif connected == False:
         current_time = time()
-        if current_time - disconnect_time > threshold:
-            #perform_shutdown(creds)
+        if current_time - disconnect_time > threshold + shutdown_fallback_time:
+            perform_shutdown(creds)
+        elif current_time - disconnect_time > threshold:
             perform_hibernate()
         else:
             print('shutting down in %d seconds'%(threshold-(current_time- disconnect_time)))
